@@ -29,6 +29,7 @@ steps:
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
+
 - task: AzureRmWebAppDeployment@4
   inputs:
     ConnectionType: 'AzureRM'
@@ -36,15 +37,9 @@ steps:
     appType: 'webApp'
     WebAppName: 'auction'
     packageForLinux: '$(Build.ArtifactStagingDirectory)/*.zip'
+    ScriptType: 'Inline Script'
+    InlineScript: 'npm install'
     
-- task: AzurePowerShell@4
-  inputs:
-    azureSubscription: 'AzureChinaVerified'
-    ScriptType: 'InlineScript'
-    Inline: |
-      cd "D:\home\site\wwwroot"
-      npm install
-    azurePowerShellVersion: 'LatestVersion'
     
 # - task: AzureRmWebAppDeployment@4
 #   inputs:
