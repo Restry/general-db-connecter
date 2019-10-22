@@ -37,6 +37,15 @@ steps:
     WebAppName: 'auction'
     packageForLinux: '$(Build.ArtifactStagingDirectory)/*.zip'
     
+- task: AzurePowerShell@4
+  inputs:
+    azureSubscription: 'AzureChinaVerified'
+    ScriptType: 'InlineScript'
+    Inline: |
+      cd "D:\home\site\wwwroot"
+      npm install
+    azurePowerShellVersion: 'LatestVersion'
+    
 # - task: AzureRmWebAppDeployment@4
 #   inputs:
 #     ConnectedServiceName: 'Visual Studio Enterprise(1fb2f34c-52f9-4a67-94a3-08006774a48c)'
