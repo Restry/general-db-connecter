@@ -141,7 +141,7 @@ router.get('/:table', (req, res) => {
 // })
 
 router.post('/:table', (req, res) => {
-  if (!req.user) { res.status(401).json({ status: 401 }); return; }
+  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
   var objToInsert = req.body;
   db.connect(dataBase).then((dbo, base) => dbo.createCollection(req.params.table)).then(r => {
     // const obj = req.body;
@@ -165,7 +165,7 @@ router.post('/:table', (req, res) => {
 })
 
 router.put('/:table', (req, res) => {
-  if (!req.user) { res.status(401).json({ status: 401 }); return; }
+  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
   db.connect(dataBase).then((dbo) => {
     const data = req.query;
     const body = req.body;
@@ -187,7 +187,7 @@ router.put('/:table', (req, res) => {
 })
 
 router.delete('/:table', (req, res) => {
-  if (!req.user) { res.status(401).json({ status: 401 }); return; }
+  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
   db.connect(dataBase).then((dbo) => {
     const data = req.query;
     let options = [];
