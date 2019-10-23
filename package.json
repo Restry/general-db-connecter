@@ -12,10 +12,8 @@
   },
   "dependencies": {
     "binary": "^0.3.0",
-    "bluebird": "^3.7.1",
     "connect-ensure-login": "^0.1.1",
     "cookie-parser": "~1.4.4",
-    "debug": "~2.6.9",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
@@ -31,8 +29,6 @@
     "@types/mongodb": "^3.3.6",
     "@types/morgan": "^1.7.37",
     "@types/node": "^12.11.5",
-    "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
     "nodemon": "^1.19.4",
     "typescript": "^3.6.4"
   }
