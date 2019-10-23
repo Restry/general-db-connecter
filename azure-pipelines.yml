@@ -23,11 +23,11 @@ steps:
   
 - task: CopyFiles@2
   inputs:
-    SourceFolder: '$(System.SourcesDirectory)'
+    SourceFolder: '$(Build.SourcesDirectory)'
     Contents: |
       *.json
       *.config
-    TargetFolder: '$(System.SourcesDirectory)/dist'
+    TargetFolder: '$(Build.SourcesDirectory)/dist'
 
 - task: ArchiveFiles@2
   inputs:
