@@ -4,9 +4,9 @@
  * Module dependencies.
  */
 
-var app = require('../src/app');
-var debug = require('debug')('azure-auction:server');
-var http = require('http');
+const debug = require('debug')('azure-auction:server');
+import app from './app';
+import http from 'http';
 
 /**
  * Get port from environment and store in Express.
@@ -86,5 +86,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  console.log('Listening on ' + bind);
 }

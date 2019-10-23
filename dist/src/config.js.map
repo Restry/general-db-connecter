@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../src/config.js"],"names":["dataBase"],"mappings":";;;;;kBAAe;AACbA,YAAU;AADG,C;AAIR,IAAMA,8BAAW,SAAjB","file":"config.js","sourcesContent":["export default {\n  dataBase: 'auction'\n}\n\nexport const dataBase = 'auction'"]}
