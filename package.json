@@ -7,7 +7,8 @@
     "release": "npm run clean && npm run build",
     "clean": "rm -rf dist && mkdir dist",
     "build": "babel . -s -D -d dist --presets env --ignore node_modules dist",
-    "serve": "node dist/bin/www"
+    "serve": "node dist/bin/www",
+    "tsbuild": "./node_modules/typescript/bin/tsc"
   },
   "dependencies": {
     "binary": "^0.3.0",
@@ -32,6 +33,7 @@
     "@types/node": "^12.11.5",
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
-    "nodemon": "^1.19.4"
+    "nodemon": "^1.19.4",
+    "typescript": "^3.6.4"
   }
 }

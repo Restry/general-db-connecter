@@ -18,9 +18,17 @@ steps:
 
 - script: |
     npm install
-    npm run release
-  displayName: 'npm install & release'
+    npm run tsbuild
+  displayName: 'npm install & tsbuild'
   
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(System.SourcesDirectory)'
+    Contents: |
+      *.json
+      *.config
+    TargetFolder: '$(System.SourcesDirectory)/dist'
+
 - task: ArchiveFiles@2
   inputs:
     rootFolderOrFile: '$(Build.SourcesDirectory)/dist'
