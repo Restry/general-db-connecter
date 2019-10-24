@@ -8,8 +8,8 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "runtimeExecutable": "nodemon",
-      "restart": true,
+      // "runtimeExecutable": "nodemon",
+      // "restart": true,
       "program": "${workspaceFolder}/src/server.ts",
       "preLaunchTask": "ts-watch",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]

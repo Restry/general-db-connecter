@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === 'development') {
 var db = (function () {
   //实例容器
   var dbo: Db;
+  var client: MongoClient;
 
   function Singleton(database) {
     var url = config.dbUrl;
@@ -19,11 +20,12 @@ var db = (function () {
     return new Promise((resolve, reject) => {
       // Use connect method to connect to the Server
       MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true },
-        (err, client) => {
+        (err, c) => {
           if (err) {
             reject(err);
-            // console.log('db.serverStatus:', db.serverStatus())
+            console.log('db.serverStatus:', err.message);
           } else {
+            client = c;
             dbo = client.db(database);
             resolve({ dbo, client });
           }
@@ -42,7 +44,7 @@ var db = (function () {
         console.log(`instance not found: ${dbName}`);
         return Singleton(dbName);
       }
-      return Promise.resolve(dbo);
+      return Promise.resolve({ dbo, client });
     }
   };
   return _static;

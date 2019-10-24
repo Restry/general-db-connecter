@@ -131,9 +131,9 @@ router.post('/:table', ({ body, params }, res) => {
     }
     return r[method](objToInsert);
   }).then((r) => {
-    res.json({ r, objToInsert });
+    res.json({ r });
   }).catch((err) => {
-    res.send(JSON.stringify(err));
+    res.send(err.message);
     // db.close();
   }).finally(() => {
     // db.close();
