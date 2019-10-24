@@ -21,8 +21,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
-app.use('/api', api.router);
-app.use('/', (req, res) => res.send('api running good11222 !'));
+app.use('/api', api);
+
+app.use('/', (req, res) => res.send('api running good !'));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

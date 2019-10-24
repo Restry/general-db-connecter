@@ -1,7 +1,6 @@
 import express from 'express';
 const router = express.Router();
 import multer from 'multer';
-import { dataBase } from '../config';
 import db from '../utils/db';
 import Binary from 'binary';
 
@@ -39,13 +38,13 @@ const removeProcessor = (data) => {
   return avliableKeys;
 }
 
-const executeFuction = (dbo, func, query) => {
+export const executeFuction = (dbo, func, query) => {
   const params = Object.keys(query).map(k => query[k]);
   const script = `${func}('${params.join("','")}')`;
   return dbo.eval(script);
 }
 
-const getTable = (dbo, table, query) => {
+export const getTable = (dbo, table, query) => {
   const data = query;
   if (data._id) {
     data._id = new ObjectId(data._id);
@@ -83,15 +82,16 @@ router.get('/', (req, res) => {
 })
 
 router.get('/js/:name', ({ params, query }, res) => {
-  db.connect(dataBase).then(({dbo}) => executeFuction(dbo, params.name, query)).then((r) => {
+  db.connect().then(({dbo}) => executeFuction(dbo, params.name, query)).then((r) => {
     res.json(r);
   }).catch((err) => {
     res.send(JSON.stringify(err));
   }).finally(() => {
   })
 })
+
 router.post('/js/:name', (req, res) => {
-  db.connect(dataBase).then(({dbo}) => {
+  db.connect().then(({dbo}) => {
     const params = Object.keys(req.body).map(k => req.body[k]);
     const script = `${req.params.name}('${params.join("','")}')`;
     return dbo.eval(script);
@@ -105,8 +105,8 @@ router.post('/js/:name', (req, res) => {
 });
 
 router.get('/:table', ({ params, query }, res) => {
-  console.log(`${dataBase}, get table`, params.table, query);
-  db.connect(dataBase).then(({dbo}) => getTable(dbo, params.table, query)).then((r) => {
+  console.log(` get table`, params.table, query);
+  db.connect().then(({dbo}) => getTable(dbo, params.table, query)).then((r) => {
     res.json(r);
   }).catch((err) => {
     res.send(JSON.stringify(err));
@@ -119,7 +119,7 @@ router.get('/:table', ({ params, query }, res) => {
 router.post('/:table', ({ body, params }, res) => {
   // if (!req.user) { res.status(401).json({ status: 401 }); return; }
   const objToInsert = body;
-  db.connect(dataBase).then(({dbo}) => dbo.createCollection(params.table)).then(r => {
+  db.connect().then(({dbo}) => dbo.createCollection(params.table)).then(r => {
     // const obj = req.body;
     let method = 'insertOne';
     if (Array.isArray(objToInsert)) {
@@ -142,7 +142,7 @@ router.post('/:table', ({ body, params }, res) => {
 
 router.put('/:table', (req, res) => {
   // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  db.connect(dataBase).then(({dbo}) => {
+  db.connect().then(({dbo}) => {
     const data = req.query;
     const body = req.body;
     if (data._id) {
@@ -164,7 +164,7 @@ router.put('/:table', (req, res) => {
 
 router.delete('/:table', ({ query, body, params }, res) => {
   // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  db.connect(dataBase).then(({dbo}) => {
+  db.connect().then(({dbo}) => {
     const data = query;
     let options = [];
 
@@ -192,7 +192,7 @@ router.delete('/:table', ({ query, body, params }, res) => {
 
 router.post('/:table/upload', upload.any(), ({ params, body, files }: any, res) => {
 
-  db.connect(dataBase).then(({dbo}) => dbo.createCollection(params.table)).then(r => {
+  db.connect().then(({dbo}) => dbo.createCollection(params.table)).then(r => {
     const obj = body;
     obj.file = Binary(files[0].buffer)
 
@@ -208,7 +208,7 @@ router.post('/:table/upload', upload.any(), ({ params, body, files }: any, res) 
 
 router.get('/:table/download', ({ params, query }, res) => {
 
-  db.connect(dataBase).then(({dbo}) => dbo.createCollection(params.table)).then(r => {
+  db.connect().then(({dbo}) => dbo.createCollection(params.table)).then(r => {
     const data = query;
     if (data._id) {
       data._id = new ObjectId(data._id);
@@ -231,4 +231,4 @@ router.get('/:table/download', ({ params, query }, res) => {
 // 拼图api
 
 
-export default { router, executeFuction, getTable };
+export default router;

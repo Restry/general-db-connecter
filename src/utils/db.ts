@@ -1,7 +1,8 @@
 import { MongoClient, Db } from 'mongodb';
 
-const config = {
+export const config = {
   dbUrl: 'mongodb://restry:wanICE193gxLoYpYT7ttHtWPlSnoZ6o68es0l05MNHPsMvyyfnynMGLRZUHYnLiwOedLro0WUhSWZdVnzjzMyg%3D%3D@restry.documents.azure.cn:10255/?ssl=true',// 阿里外网
+  dataBase: 'auction',
 }
 
 if (process.env.NODE_ENV === 'development') {
@@ -36,10 +37,10 @@ var db = (function () {
 
     //获取实例的方法
     //返回Singleton的实例
-    connect: function (args) {
+    connect: function (dbName = config.dataBase) {
       if (dbo === undefined) {
-        console.log(`instance not found: ${args}`);
-        return Singleton(args);
+        console.log(`instance not found: ${dbName}`);
+        return Singleton(dbName);
       }
       return Promise.resolve(dbo);
     }
