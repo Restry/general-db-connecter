@@ -4,7 +4,7 @@ import db from '../utils/db';
 import { getTable } from './api';
 
 
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function (user: any, done) {
   console.log('serialize user', user._id);
   done(null, user._id);
 });
@@ -27,7 +27,7 @@ passport.use(new LocalStrategy({ /*usernameField: 'name', passwordField: 'passwd
       return;
     }
     const { dbo }: any = await db.connect();
-    const user = await getTable(dbo, 'users', {  username,  password })
+    const user = await getTable(dbo, 'users', { username, password })
 
     if (!user || !user.length) {
       done(null, false, { message: 'Incorrect username or password.' });
