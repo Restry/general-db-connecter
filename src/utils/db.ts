@@ -9,17 +9,21 @@ if (process.env.NODE_ENV === 'development') {
 
 }
 
+interface DbType {
+  name: string;
+  connect: (dbUrl?: string, dbName?: string) => Promise<({ dbo: Db, client: MongoClient })>
+}
+
 var db = (function () {
   //实例容器
   var dbo: Db;
   var client: MongoClient;
 
-  function Singleton(database) {
-    var url = config.dbUrl;
+  function Singleton(dbUrl, database) { 
     // console.log(`url:${url}`);
     return new Promise((resolve, reject) => {
       // Use connect method to connect to the Server
-      MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true },
+      MongoClient.connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true },
         (err, c) => {
           if (err) {
             reject(err);
@@ -39,14 +43,15 @@ var db = (function () {
 
     //获取实例的方法
     //返回Singleton的实例
-    connect: function (dbName = config.dataBase) {
+    connect: function (dbUrl = config.dbUrl, dbName = config.dataBase) {
       if (dbo === undefined) {
-        console.log(`instance not found: ${dbName}`);
-        return Singleton(dbName);
+        console.log(`instance not found: ${dbName}, ${dbUrl}`);
+        return Singleton(dbUrl, dbName);
       }
+
       return Promise.resolve({ dbo, client });
     }
-  };
+  } as DbType;
   return _static;
 })();
 
