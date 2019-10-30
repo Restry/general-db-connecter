@@ -6,6 +6,7 @@ import logger from 'morgan';
 // import indexRouter from './routes/index';
 // import usersRouter from './routes/users';
 import api from './routes/api';
+import database from './routes/database';
 import passport from 'passport';
 import cookieSession from 'cookie-session';
 import { ensureLoggedIn } from 'connect-ensure-login';
@@ -18,7 +19,7 @@ const app = express();
 // app.set('view engine', 'ejs');
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', '');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Origin', req.headers.origin);
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
@@ -48,6 +49,7 @@ app.use(passport.session());
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 app.use('/api', api);
+app.use('/db', database);
 
 app.get('/', ensureLoggedIn(), (req, res) => res.send('Welcome! ' + JSON.stringify(req.user) + ' : Mongodb online api!'));
 
