@@ -11,7 +11,7 @@ router.post('/', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      collections: collections.map(a => ({ name: a.collectionName }))
+      collections: collections.map(a => ({ name: a.collectionName, dbName, title: a.collectionName }))
     })
 
   } catch (error) {
