@@ -49,7 +49,18 @@ app.use(passport.session());
 
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
-app.use('/api', ensureLoggedIn(), api);
+
+// app.post('/api/record', postHandler);
+
+app.use('/api', (req, res, next) => {
+  if (req.method.toLowerCase() === 'post' && req.url === '/record') {
+    next();
+    return;
+  } else {
+    const ensure = ensureLoggedIn();
+    return ensure(req, res, next);
+  }
+}, api);
 app.use('/db', ensureLoggedIn(), database);
 
 app.get('/', ensureLoggedIn(), (req, res) => res.send('Welcome! ' + JSON.stringify(req.user) + ' : Mongodb online api!'));
@@ -70,7 +81,7 @@ app.get('/secr', async (req, res) => {
   }
   const secStrKey = `${new Date().getFullYear()}-${secStr}-${new Date().getMonth()}`;
   const base64Encoder = (str: string) => Buffer.from(str).toString('base64');
- 
+
   const secret = base64Encoder(base64Encoder(secStrKey).split('').map((a: any) => a.charCodeAt(0)).reverse()
     .join('|')).split('').reverse().join('');
 
