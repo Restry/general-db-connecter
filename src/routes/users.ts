@@ -42,3 +42,14 @@ passport.use(new LocalStrategy({ /*usernameField: 'name', passwordField: 'passwd
     // });
   }
 ));
+
+
+export const getSecret = async () => {
+  const { dbo }: any = await db.connect();
+  const user = await getTable(dbo, 'users', { username: 'admin' });
+
+  if (user) {
+    return user[0].secret;
+  }
+  return '';
+};

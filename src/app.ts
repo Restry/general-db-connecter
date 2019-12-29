@@ -11,6 +11,7 @@ import passport from 'passport';
 import cookieSession from 'cookie-session';
 import { ensureLoggedIn } from 'connect-ensure-login';
 import './routes/users';
+import { getSecret } from './routes/users';
 
 const app = express();
 
@@ -48,8 +49,8 @@ app.use(passport.session());
 
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
-app.use('/api', api);
-app.use('/db', database);
+app.use('/api', ensureLoggedIn(), api);
+app.use('/db', ensureLoggedIn(), database);
 
 app.get('/', ensureLoggedIn(), (req, res) => res.send('Welcome! ' + JSON.stringify(req.user) + ' : Mongodb online api!'));
 
@@ -59,6 +60,23 @@ app.get('/login', (req, res) => {
     statusText: 'unauthorized',
   })
 });
+
+app.get('/secr', async (req, res) => {
+  const secStr = await getSecret();
+  if (!secStr) {
+    res.send('');
+    res.end();
+    return;
+  }
+  const secStrKey = `${new Date().getFullYear()}-${secStr}-${new Date().getMonth()}`;
+  const base64Encoder = (str: string) => Buffer.from(str).toString('base64');
+ 
+  const secret = base64Encoder(base64Encoder(secStrKey).split('').map((a: any) => a.charCodeAt(0)).reverse()
+    .join('|')).split('').reverse().join('');
+
+  res.send(base64Encoder(secret));
+  res.end();
+})
 
 app.post('/login', passport.authenticate('local'), (req, res) => {
   res.json(req.user ? {
