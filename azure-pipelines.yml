@@ -5,7 +5,17 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- master
+  branches:
+    include:
+      - develop
+      - release
+      - master
+  paths:
+    include:
+    - src
+    - bin
+    - public
+    - azure-pipelines.yml
 
 pool:
   vmImage: 'Ubuntu-16.04'
