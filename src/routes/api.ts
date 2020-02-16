@@ -91,7 +91,7 @@ router.get('/js/:name', ({ params, query }, res) => {
 })
 
 router.post('/js/:name', (req, res) => {
-  db.connect().then(({ dbo }) => {
+  db.connect().then(({ dbo }: any) => {
     const params = Object.keys(req.body).map(k => req.body[k]);
     const script = `${req.params.name}('${params.join("','")}')`;
     return dbo.eval(script);
