@@ -77,6 +77,31 @@ export const getTable = (dbo, table, query) => {
   return execute.toArray();
 };
 
+export const postHandler = ({ body, params }, res) => {
+  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
+  const objToInsert = body;
+  db.connect().then(({ dbo }) => dbo.createCollection(params.table)).then(r => {
+    // const obj = req.body;
+    let method = 'insertOne';
+    if (Array.isArray(objToInsert)) {
+      method = 'insertMany';
+      objToInsert.forEach(a => { a.created = new Date(); a.modified = new Date(); });
+    } else {
+      objToInsert.created = new Date();
+      objToInsert.modified = new Date();
+    }
+    return r[method](objToInsert);
+  }).then((r) => {
+    res.json(r);
+  }).catch((err) => {
+    res.send(err.message);
+    // db.close();
+  }).finally(() => {
+    // db.close();
+  })
+}
+
+
 router.get('/', (req, res) => {
   res.send('api was ready');
 })
@@ -116,29 +141,7 @@ router.get('/:table', ({ params, query }, res) => {
   })
 })
 
-router.post('/:table', ({ body, params }, res) => {
-  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  const objToInsert = body;
-  db.connect().then(({ dbo }) => dbo.createCollection(params.table)).then(r => {
-    // const obj = req.body;
-    let method = 'insertOne';
-    if (Array.isArray(objToInsert)) {
-      method = 'insertMany';
-      objToInsert.forEach(a => { a.created = new Date(); a.modified = new Date(); });
-    } else {
-      objToInsert.created = new Date();
-      objToInsert.modified = new Date();
-    }
-    return r[method](objToInsert);
-  }).then((r) => {
-    res.json(r);
-  }).catch((err) => {
-    res.send(err.message);
-    // db.close();
-  }).finally(() => {
-    // db.close();
-  })
-})
+router.post('/:table', postHandler);
 
 router.put('/:table', (req, res) => {
   // if (!req.user) { res.status(401).json({ status: 401 }); return; }
