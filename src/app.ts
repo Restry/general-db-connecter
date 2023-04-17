@@ -5,14 +5,14 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 // import indexRouter from './routes/index';
 // import usersRouter from './routes/users';
-import api from './routes/api';
+import api, { getTable } from './routes/api';
 import database from './routes/database';
 import passport from 'passport';
 import cookieSession from 'cookie-session';
 import { ensureLoggedIn } from 'connect-ensure-login';
 import './routes/users';
 import { getSecret } from './routes/users';
-import crypto from 'crypto';
+import db from './utils/db';
 
 const app = express();
 
@@ -54,17 +54,36 @@ app.use(passport.session());
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 
-// app.post('/api/record', postHandler);
+const isValidAccessToken = async accesstoken => {
+  // get token from users table by accesstoken
+  // if token is valid return true
+
+  if (tokenStorage.has(accesstoken)) return true;
+
+  const { dbo } = await db.connect();
+  const user = await getTable(dbo, 'users', { accesstoken });
+
+  if (!user || !user.length) {
+    return false;
+  }
+
+  tokenStorage.set(accesstoken, user[0]);
+  return true;
+};
 
 app.use(
   '/api',
-  (req, res, next) => {
+  async (req, res, next) => {
     if (req.method.toLowerCase() === 'post' && req.url === '/record') {
       next();
       return;
     } else {
       const token = req.headers.authorization;
-      if (token && tokenStorage.has(token)) return next();
+      if (token) {
+        const isValidToken = await isValidAccessToken(token);
+        if (isValidToken) return next();
+      }
+
       const ensure = ensureLoggedIn();
       return ensure(req, res, next);
     }
@@ -111,15 +130,13 @@ app.get('/secr', async (_req, res) => {
 
 app.post('/login', passport.authenticate('local'), (req, res) => {
   // 生成一个长度为32的随机token
-  const token = crypto.randomBytes(32).toString('hex');
   var user = req.user;
   if (user) {
-    tokenStorage.set(token, user);
-
+    delete user.password;
     res.json({
       status: 200,
       statusText: 'ok',
-      data: { token, user }
+      data: { user }
     });
   } else {
     res.json({

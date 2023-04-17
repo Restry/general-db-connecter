@@ -13,7 +13,11 @@ const pool = createPool(
     create: async function () {
       // 创建数据库连接
       const client = await MongoClient.connect(
-        'mongodb://auction:auction123456@windart-api.chinanorth.cloudapp.chinacloudapi.cn:28888/?authSource=auction_db'
+        'mongodb://auction:auction123456@windart-api.chinanorth.cloudapp.chinacloudapi.cn:28888/?authSource=auction_db',
+        {
+          useNewUrlParser: true,
+          useUnifiedTopology: true
+        }
       );
       return client;
     },

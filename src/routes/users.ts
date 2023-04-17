@@ -2,6 +2,8 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import db from '../utils/db';
 import { getTable } from './api';
+import { ObjectId } from 'mongodb';
+import crypto from 'crypto';
 
 passport.serializeUser(function (user: any, done) {
   console.log('serialize user', user._id);
@@ -31,7 +33,7 @@ passport.use(
         done(null, false, { message: 'Incorrect username.' });
         return;
       }
-      const { dbo }: any = await db.connect();
+      const { dbo } = await db.connect();
       const user = await getTable(dbo, 'users', { username, password });
 
       if (!user || !user.length) {
@@ -39,11 +41,19 @@ passport.use(
         return;
       }
 
-      // User.findOne({ username: username }, function (err, user) {
-      // if (err) { return done(err); }
+      const accesstoken = crypto.randomBytes(32).toString('hex');
 
-      console.log('find user');
-      done(null, user[0]);
+      const updatedUser = await dbo.collection('users').updateOne(
+        { _id: new ObjectId(user[0]._id) },
+        {
+          $set: {
+            accesstoken
+          }
+        }
+      );
+
+      updatedUser.upsertedId && console.log('find user',updatedUser.upsertedId);
+      done(null, { ...user[0], accesstoken });
       // });
     }
   )
