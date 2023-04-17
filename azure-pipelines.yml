@@ -30,12 +30,12 @@ steps:
   displayName: 'Install Node.js'
 
 - script: |
-    npm install
+    yarn install
     sh build.sh
     docker login -u restry -p ${token}
 
     docker push restry/general-db-connecter:latest 
-  displayName: 'npm install & push'
+  displayName: 'yarn install & push'
 
 # - task: ArchiveFiles@2
 #   inputs:
