@@ -32,7 +32,7 @@ steps:
 - script: |
     yarn install
     sh build.sh
-    docker login -u restry -p ${token}
+    docker login -u restry -p $(token)
 
     docker push restry/general-db-connecter:latest 
   displayName: 'yarn install & push'
