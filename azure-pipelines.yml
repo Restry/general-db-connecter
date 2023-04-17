@@ -31,9 +31,11 @@ steps:
 
 - script: |
     yarn install
-    sh build.sh
+    yarn run tsbuild
+    ls ./dist
+    docker build --pull --rm -f "Dockerfile" -t restry/general-db-connecter:latest "."
+    
     docker login -u restry -p $(token)
-
     docker push restry/general-db-connecter:latest 
   displayName: 'yarn install & push'
 
