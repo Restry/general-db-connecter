@@ -19,8 +19,11 @@ trigger:
 
 pool:
   vmImage: 'Ubuntu-16.04'
-
+  
 steps:
+- task: DockerInstaller@0
+  inputs:
+    dockerVersion: '17.09.0-ce'
 - task: NodeTool@0
   inputs:
     versionSpec: '10.x'
@@ -28,35 +31,30 @@ steps:
 
 - script: |
     npm install
-    npm run tsbuild
-  displayName: 'npm install & tsbuild'
-  
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)'
-    Contents: |
-      *.json
-      *.config
-    TargetFolder: '$(Build.SourcesDirectory)/dist'
+    sh build.sh
+    docker login -u restry -p ${token}
 
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)/dist'
-    includeRootFolder: false
-    archiveFile: '$(Build.ArtifactStagingDirectory)/hosts.zip'
-    replaceExistingArchive: true
+    docker push restry/general-db-connecter:latest 
+  displayName: 'npm install & push'
 
-- task: PublishBuildArtifacts@1
+# - task: ArchiveFiles@2
+#   inputs:
+#     rootFolderOrFile: '$(Build.SourcesDirectory)/dist'
+#     includeRootFolder: false
+#     archiveFile: '$(Build.ArtifactStagingDirectory)/hosts.zip'
+#     replaceExistingArchive: true
 
-- task: AzureRmWebAppDeployment@4
-  inputs:
-    ConnectionType: 'AzureRM'
-    azureSubscription: 'AzureChinaVerified'
-    appType: 'webApp'
-    WebAppName: 'auction'
-    packageForLinux: '$(Build.ArtifactStagingDirectory)/*.zip'
-    ScriptType: 'Inline Script'
-    InlineScript: 'npm install'
+# - task: PublishBuildArtifacts@1
+
+# - task: AzureRmWebAppDeployment@4
+#   inputs:
+#     ConnectionType: 'AzureRM'
+#     azureSubscription: 'AzureChinaVerified'
+#     appType: 'webApp'
+#     WebAppName: 'auction'
+#     packageForLinux: '$(Build.ArtifactStagingDirectory)/*.zip'
+#     ScriptType: 'Inline Script'
+#     InlineScript: 'npm install'
     
     
 # - task: AzureRmWebAppDeployment@4
