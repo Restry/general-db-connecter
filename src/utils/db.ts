@@ -1,17 +1,53 @@
 import { MongoClient, Db } from 'mongodb';
+import { createPool, Pool } from 'generic-pool';
 
 export const config = {
-  dbUrl: 'mongodb://restry:wanICE193gxLoYpYT7ttHtWPlSnoZ6o68es0l05MNHPsMvyyfnynMGLRZUHYnLiwOedLro0WUhSWZdVnzjzMyg%3D%3D@restry.documents.azure.cn:10255/?ssl=true',// 阿里外网
-  dataBase: 'auction',
-}
+  dbUrl:
+    'mongodb://auction:auction123456@windart-api.chinanorth.cloudapp.chinacloudapi.cn:28888/?authSource=auction_db', // 阿里外网
+  dataBase: 'auction_db'
+};
+
+// 创建一个连接池
+const pool = createPool(
+  {
+    create: async function () {
+      // 创建数据库连接
+      const client = await MongoClient.connect(
+        'mongodb://auction:auction123456@windart-api.chinanorth.cloudapp.chinacloudapi.cn:28888/?authSource=auction_db'
+      );
+      return client;
+    },
+    destroy: function (client) {
+      // 关闭数据库连接
+      return client.close();
+    }
+  },
+  {
+    max: 10, // 最大连接数
+    min: 2, // 最小连接数
+    idleTimeoutMillis: 30000, // 连接池空闲超时时间
+    acquireTimeoutMillis: 5000 // 获取连接的超时时间
+  }
+);
+
+const connect = async (dbName = 'auction_db') => {
+  try {
+    // 从连接池中获取一个连接
+    const client = await pool.acquire();
+    const dbo = client.db(dbName);
+    return { client, dbo, pool };
+  } catch (error) {
+  } finally {
+  }
+  // 释放连接
+};
 
 if (process.env.NODE_ENV === 'development') {
-
 }
 
 interface DbType {
   name: string;
-  connect: (dbUrl?: string, dbName?: string) => Promise<({ dbo: Db, client: MongoClient })>
+  connect: (dbUrl?: string, dbName?: string) => Promise<{ dbo: Db; client: MongoClient }>;
 }
 
 var db = (function () {
@@ -19,24 +55,22 @@ var db = (function () {
   var dbo: Db;
   var client: MongoClient;
 
-  function Singleton(dbUrl, database) { 
+  function Singleton(dbUrl, database) {
     // console.log(`url:${url}`);
     return new Promise((resolve, reject) => {
       // Use connect method to connect to the Server
-      MongoClient.connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true },
-        (err, c) => {
-          if (err) {
-            reject(err);
-            console.log('db.serverStatus:', err.message);
-          } else {
-            client = c;
-            dbo = client.db(database);
-            resolve({ dbo, client });
-          }
-        });
+      MongoClient.connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true }, (err, c) => {
+        if (err) {
+          reject(err);
+          console.log('db.serverStatus:', err.message);
+        } else {
+          client = c;
+          dbo = client.db(database);
+          resolve({ dbo, client });
+        }
+      });
     });
   }
-
 
   var _static = {
     name: 'SingletonDBConnection',
@@ -55,5 +89,4 @@ var db = (function () {
   return _static;
 })();
 
-export default db;
-
+export default { connect, pool };

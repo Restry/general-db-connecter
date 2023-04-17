@@ -8,41 +8,43 @@ const upload = multer();
 import { ObjectId } from 'mongodb';
 // const { ensureLoggedIn } = require('connect-ensure-login');
 
-const removeProcessor = (data) => {
-  const avliableKeys = {}
+const removeProcessor = data => {
+  const avliableKeys = {};
   try {
     Object.keys(data).forEach(a => {
       const value = data[a];
       if (!a.startsWith('$')) {
-        if (a.endsWith('$')) { // 以$结尾表示 不等于
+        if (a.endsWith('$')) {
+          // 以$结尾表示 不等于
           avliableKeys[a.replace('$', '')] = {
             $ne: value
           };
-        } else if (typeof value === 'string' &&
-          (value.toLocaleLowerCase() === 'true' || value.toLocaleLowerCase() === 'false')) {
+        } else if (
+          typeof value === 'string' &&
+          (value.toLocaleLowerCase() === 'true' || value.toLocaleLowerCase() === 'false')
+        ) {
           avliableKeys[a] = JSON.parse(value);
-        }
-        else {
+        } else {
           avliableKeys[a] = Number(value) ? Number(value) : value;
         }
       } else if (a === '$where' && value) {
         const where = JSON.parse(value); // 通过JSON序列化回来的字符串可以保留基础类型
         Object.assign(avliableKeys, where);
       }
-    })
+    });
 
     // console.log('avliableKeys', avliableKeys)
   } catch (error) {
     console.error(error);
   }
   return avliableKeys;
-}
+};
 
 export const executeFuction = (dbo, func, query) => {
   const params = Object.keys(query).map(k => query[k]);
   const script = `${func}('${params.join("','")}')`;
   return dbo.eval(script);
-}
+};
 
 export const getTable = (dbo, table, query) => {
   const data = query;
@@ -54,120 +56,126 @@ export const getTable = (dbo, table, query) => {
   let querys = null;
   if (data.$fields) {
     querys = {};
-    data.$fields.split(',').forEach(a => querys[a] = 1);
-    execute = execute.project(querys)
+    data.$fields.split(',').forEach(a => (querys[a] = 1));
+    execute = execute.project(querys);
   }
   if (data.$limit) {
-    execute = execute.limit(parseInt(data.$limit))
+    execute = execute.limit(parseInt(data.$limit));
   }
   if (data.$skip) {
-    execute = execute.skip(parseInt(data.$skip))
+    execute = execute.skip(parseInt(data.$skip));
   }
   if (data.$sort) {
-    const sort = {}
+    const sort = {};
     sort[data.$sort] = 1;
-    execute = execute.sort(sort)
+    execute = execute.sort(sort);
   }
   if (data.$sortdesc) {
-    const sort = {}
+    const sort = {};
     sort[data.$sortdesc] = -1;
-    execute = execute.sort(sort)
+    execute = execute.sort(sort);
   }
 
   return execute.toArray();
 };
 
-export const postHandler = ({ body, params }, res) => {
-  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  const objToInsert = body;
-  db.connect().then(({ dbo }) => dbo.createCollection(params.table)).then(r => {
-    // const obj = req.body;
+export const postHandler = async ({ body, params }, res) => {
+  try {
+    // if (!req.user) { res.status(401).json({ status: 401 }); return; }
+    const objToInsert = body;
+    const { dbo, client, pool } = await db.connect();
+    const collection = dbo.collection(params.table);
+
     let method = 'insertOne';
     if (Array.isArray(objToInsert)) {
       method = 'insertMany';
-      objToInsert.forEach(a => { a.created = new Date(); a.modified = new Date(); });
+      objToInsert.forEach(a => {
+        a.created = new Date();
+        a.modified = new Date();
+      });
     } else {
       objToInsert.created = new Date();
       objToInsert.modified = new Date();
     }
-    return r[method](objToInsert);
-  }).then((r) => {
-    res.json(r);
-  }).catch((err) => {
+
+    const result = await collection[method](objToInsert);
+    res.json(result.ops);
+
+    pool.release(client);
+  } catch (err) {
     res.send(err.message);
+  } finally {
     // db.close();
-  }).finally(() => {
-    // db.close();
-  })
-}
-
-
+  }
+};
 router.get('/', (req, res) => {
   res.send('api was ready');
-})
-
-router.get('/js/:name', ({ params, query }, res) => {
-  db.connect().then(({ dbo }) => executeFuction(dbo, params.name, query)).then((r) => {
-    res.json(r);
-  }).catch((err) => {
-    res.send(JSON.stringify(err));
-  }).finally(() => {
-  })
-})
-
-router.post('/js/:name', (req, res) => {
-  db.connect().then(({ dbo }: any) => {
-    const params = Object.keys(req.body).map(k => req.body[k]);
-    const script = `${req.params.name}('${params.join("','")}')`;
-    return dbo.eval(script);
-  }).then((r) => {
-    res.json(r);
-  }).catch((err) => {
-    res.send(JSON.stringify(err));
-  }).finally(() => {
-    // createConnection.close();
-  })
 });
-
-router.get('/:table', ({ params, query }, res) => {
-  console.log(` get table`, params.table, query);
-  db.connect().then(({ dbo }) => getTable(dbo, params.table, query)).then((r) => {
-    res.json(r);
-  }).catch((err) => {
-    res.send(JSON.stringify(err));
-    // db.close();
-  }).finally(() => {
-    // db.close();
-  })
-})
 
 router.post('/:table', postHandler);
 
-router.put('/:table', (req, res) => {
-  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  db.connect().then(({ dbo }) => {
+router.get('/js/:name', async ({ params, query }, res) => {
+  try {
+    const { dbo } = await db.connect();
+    const r = await executeFuction(dbo, params.name, query);
+    res.json(r);
+  } catch (err) {
+    res.send(JSON.stringify(err));
+  }
+});
+
+router.post('/js/:name', async (req, res) => {
+  try {
+    const { dbo } = await db.connect();
+    const params = Object.keys(req.body).map(k => req.body[k]);
+    const script = `${req.params.name}('${params.join("','")}')`;
+    const r = await dbo.eval(script);
+    res.json(r);
+  } catch (err) {
+    res.send(JSON.stringify(err));
+  }
+});
+
+router.get('/:table', async ({ params, query }, res) => {
+  console.log(` get table`, params.table, query);
+  try {
+    const { dbo } = await db.connect();
+    const r = await getTable(dbo, params.table, query);
+    res.json(r);
+  } catch (err) {
+    res.send(JSON.stringify(err));
+  }
+});
+
+
+
+router.put('/:table', async (req, res) => {
+  try {
+    const { dbo } = await db.connect();
     const data = req.query;
     const body = req.body;
     if (data._id) {
       data._id = new ObjectId(data._id);
     }
     body.modified = new Date();
-
-    return dbo.collection(req.params.table).updateMany(data || {}, {
-      "$set": body
-    }, { upsert: true });
-  }).then((r) => {
+    const r = await dbo.collection(req.params.table).updateMany(
+      data || {},
+      {
+        $set: body
+      },
+      { upsert: true }
+    );
     res.json(r);
-  }).catch((err) => {
+  } catch (err) {
     res.send(JSON.stringify(err));
-  }).finally(() => {
+  } finally {
     // createConnection.close();
-  })
-})
+  }
+});
 
-router.delete('/:table', ({ query, body, params }, res) => {
-  // if (!req.user) { res.status(401).json({ status: 401 }); return; }
-  db.connect().then(({ dbo }) => {
+router.delete('/:table', async ({ query, body, params }, res) => {
+  try {
+    const { dbo } = await db.connect();
     const data = query;
     let options = [];
 
@@ -178,49 +186,46 @@ router.delete('/:table', ({ query, body, params }, res) => {
     } else if (body && body._id) {
       options.push(body._id);
     }
-    if (options.length == 0) throw "cannot find delete prarms";
+    if (options.length == 0) throw 'cannot find delete prarms';
 
-    return dbo.collection(params.table).deleteMany({
-      "_id": {
+    const r = await dbo.collection(params.table).deleteMany({
+      _id: {
         $in: options.map(a => new ObjectId(a))
       }
     });
-  }).then((r) => {
     res.json(r);
-    // res.send(JSON.stringify(r));
-  }).catch((err) => {
+  } catch (err) {
     res.send(JSON.stringify(err));
-  }).finally(() => {
+  } finally {
     // createConnection.close();
-  })
-})
+  }
+});
 
-router.post('/:table/upload', upload.any(), ({ params, body, files }: any, res) => {
-
-  db.connect().then(({ dbo }) => dbo.createCollection(params.table)).then(r => {
+router.post('/:table/upload', upload.any(), async ({ params, body, files }: any, res) => {
+  try {
+    const { dbo } = await db.connect();
+    await dbo.createCollection(params.table);
     const obj = body;
-    obj.file = Binary(files[0].buffer)
+    obj.file = Binary(files[0].buffer);
 
-    return r.insert(obj);
-  }).then(({ insertedIds }) => {
+    const { insertedIds } = await dbo.collection(params.table).insert(obj);
     res.status(200).send(insertedIds);
-  }).catch((err) => {
+  } catch (err) {
     res.send(JSON.stringify(err));
-  }).finally(() => {
+  } finally {
     // createConnection.close();
-  })
-})
+  }
+});
 
-router.get('/:table/download', ({ params, query }, res) => {
-
-  db.connect().then(({ dbo }) => dbo.createCollection(params.table)).then(r => {
+router.get('/:table/download', async ({ params, query }, res) => {
+  try {
+    const { dbo } = await db.connect();
+    await dbo.createCollection(params.table);
     const data = query;
     if (data._id) {
       data._id = new ObjectId(data._id);
     }
-
-    return r.find(data || {}).toArray()
-  }).then((documents) => {
+    const documents = await dbo.collection(params.table).find(data || {}).toArray();
     const file = documents[0].file;
 
     res.writeHead(200, {
@@ -229,11 +234,11 @@ router.get('/:table/download', ({ params, query }, res) => {
       'Content-Length': documents[0].size
     });
     res.end(new Buffer(file.buffer, 'binary'));
-
-  })
-})
+  } catch (err) {
+    res.send(JSON.stringify(err));
+  }
+});
 
 // 拼图api
-
 
 export default router;

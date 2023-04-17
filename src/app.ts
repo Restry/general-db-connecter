@@ -12,8 +12,11 @@ import cookieSession from 'cookie-session';
 import { ensureLoggedIn } from 'connect-ensure-login';
 import './routes/users';
 import { getSecret } from './routes/users';
+import crypto from 'crypto';
 
 const app = express();
+
+const tokenStorage = new Map();
 
 // view engine setup 暂停使用渲染引擎
 // app.set('views', path.join(__dirname, 'views'));
@@ -37,13 +40,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-app.use(cookieSession({
-  name: 'session',
-  keys: ['/* secret keys */'],
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}))
+app.use(
+  cookieSession({
+    name: 'session',
+    keys: ['/* secret keys */'],
+    // Cookie Options
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -52,27 +56,35 @@ app.use(passport.session());
 
 // app.post('/api/record', postHandler);
 
-app.use('/api', (req, res, next) => {
-  if (req.method.toLowerCase() === 'post' && req.url === '/record') {
-    next();
-    return;
-  } else {
-    const ensure = ensureLoggedIn();
-    return ensure(req, res, next);
-  }
-}, api);
+app.use(
+  '/api',
+  (req, res, next) => {
+    if (req.method.toLowerCase() === 'post' && req.url === '/record') {
+      next();
+      return;
+    } else {
+      const token = req.headers.authorization;
+      if (token && tokenStorage.has(token)) return next();
+      const ensure = ensureLoggedIn();
+      return ensure(req, res, next);
+    }
+  },
+  api
+);
 app.use('/db', ensureLoggedIn(), database);
 
-app.get('/', ensureLoggedIn(), (req, res) => res.send('Welcome! ' + JSON.stringify(req.user) + ' : Mongodb online api!'));
+app.get('/', ensureLoggedIn(), (req, res) =>
+  res.send('Welcome! ' + JSON.stringify(req.user) + ' : Mongodb online api!')
+);
 
-app.get('/login', (req, res) => {
+app.get('/login', (_req, res) => {
   res.json({
     status: 401,
-    statusText: 'unauthorized',
-  })
+    statusText: 'unauthorized'
+  });
 });
 
-app.get('/secr', async (req, res) => {
+app.get('/secr', async (_req, res) => {
   const secStr = await getSecret();
   if (!secStr) {
     res.send('');
@@ -82,35 +94,49 @@ app.get('/secr', async (req, res) => {
   const secStrKey = `${new Date().getFullYear()}-${secStr}-${new Date().getMonth()}`;
   const base64Encoder = (str: string) => Buffer.from(str).toString('base64');
 
-  const secret = base64Encoder(base64Encoder(secStrKey).split('').map((a: any) => a.charCodeAt(0)).reverse()
-    .join('|')).split('').reverse().join('');
+  const secret = base64Encoder(
+    base64Encoder(secStrKey)
+      .split('')
+      .map((a: any) => a.charCodeAt(0))
+      .reverse()
+      .join('|')
+  )
+    .split('')
+    .reverse()
+    .join('');
 
   res.send(base64Encoder(secret));
   res.end();
-})
+});
 
 app.post('/login', passport.authenticate('local'), (req, res) => {
-  res.json(req.user ? {
-    status: 200,
-    statusText: 'ok',
-    user: req.user,
-  } : {
+  // 生成一个长度为32的随机token
+  const token = crypto.randomBytes(32).toString('hex');
+  var user = req.user;
+  if (user) {
+    tokenStorage.set(token, user);
+
+    res.json({
+      status: 200,
+      statusText: 'ok',
+      data: { token, user }
+    });
+  } else {
+    res.json({
       status: 401,
-      statusText: 'unauthorized',
-      currentAuthority: 'guest',
-    })
+      statusText: 'unauthorized'
+    });
+  }
 });
 
 app.get('/logout', (req, res) => {
-  req.logout();
+  req.logout(err => {});
   res.redirect('/');
 });
 
 app.get('/profile', ensureLoggedIn(), (req, res) => {
   res.json(req.user ? req.user : { status: 401 });
 });
-
-
 
 // catch 404 and forward to error handler
 // app.use((req, res, next) => {

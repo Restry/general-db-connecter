@@ -12,7 +12,10 @@
       // "restart": true,
       "program": "${workspaceFolder}/src/server.ts",
       "preLaunchTask": "ts-watch",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "env": {
+        "MONGO_URL": "mongodb://auction:auction123456@windart-api.chinanorth.cloudapp.chinacloudapi.cn:28888/?authSource=auction_db", 
+      }
     }
   ]
 }
