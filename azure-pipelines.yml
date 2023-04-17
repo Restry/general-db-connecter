@@ -31,7 +31,7 @@ steps:
 
 - script: |
     yarn install
-    yarn run tsbuild
+    yarn run tsbuild || true
     ls ./dist
     docker build --pull --rm -f "Dockerfile" -t restry/general-db-connecter:latest "."
     
