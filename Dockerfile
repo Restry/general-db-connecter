@@ -2,7 +2,7 @@
 FROM node:alpine
 
 WORKDIR /app
-COPY ./dist/** /app
+COPY ./dist/src /app
 COPY ./ecosystem.config.js /app
 COPY ./package.json /app
 COPY ./yarn.lock /app
