@@ -41,6 +41,7 @@ const connect = async (dbName = 'auction_db') => {
     const dbo = client.db(dbName);
     return { client, dbo, pool };
   } catch (error) {
+    console.error(error)
   } finally {
   }
   // 释放连接

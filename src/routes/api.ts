@@ -116,9 +116,11 @@ router.post('/:table', postHandler);
 
 router.get('/js/:name', async ({ params, query }, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     const r = await executeFuction(dbo, params.name, query);
     res.json(r);
+
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   }
@@ -126,11 +128,12 @@ router.get('/js/:name', async ({ params, query }, res) => {
 
 router.post('/js/:name', async (req, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     const params = Object.keys(req.body).map(k => req.body[k]);
     const script = `${req.params.name}('${params.join("','")}')`;
     const r = await dbo.eval(script);
     res.json(r);
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   }
@@ -139,19 +142,18 @@ router.post('/js/:name', async (req, res) => {
 router.get('/:table', async ({ params, query }, res) => {
   console.log(` get table`, params.table, query);
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     const r = await getTable(dbo, params.table, query);
     res.json(r);
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   }
 });
 
-
-
 router.put('/:table', async (req, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     const data = req.query;
     const body = req.body;
     if (data._id) {
@@ -166,6 +168,7 @@ router.put('/:table', async (req, res) => {
       { upsert: true }
     );
     res.json(r);
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   } finally {
@@ -175,7 +178,7 @@ router.put('/:table', async (req, res) => {
 
 router.delete('/:table', async ({ query, body, params }, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     const data = query;
     let options = [];
 
@@ -194,6 +197,7 @@ router.delete('/:table', async ({ query, body, params }, res) => {
       }
     });
     res.json(r);
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   } finally {
@@ -203,13 +207,14 @@ router.delete('/:table', async ({ query, body, params }, res) => {
 
 router.post('/:table/upload', upload.any(), async ({ params, body, files }: any, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     await dbo.createCollection(params.table);
     const obj = body;
     obj.file = Binary(files[0].buffer);
 
     const { insertedIds } = await dbo.collection(params.table).insert(obj);
     res.status(200).send(insertedIds);
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   } finally {
@@ -219,13 +224,16 @@ router.post('/:table/upload', upload.any(), async ({ params, body, files }: any,
 
 router.get('/:table/download', async ({ params, query }, res) => {
   try {
-    const { dbo } = await db.connect();
+    const { dbo, client, pool } = await db.connect();
     await dbo.createCollection(params.table);
     const data = query;
     if (data._id) {
       data._id = new ObjectId(data._id);
     }
-    const documents = await dbo.collection(params.table).find(data || {}).toArray();
+    const documents = await dbo
+      .collection(params.table)
+      .find(data || {})
+      .toArray();
     const file = documents[0].file;
 
     res.writeHead(200, {
@@ -234,10 +242,10 @@ router.get('/:table/download', async ({ params, query }, res) => {
       'Content-Length': documents[0].size
     });
     res.end(new Buffer(file.buffer, 'binary'));
+    pool.release(client);
   } catch (err) {
     res.send(JSON.stringify(err));
   }
 });
- 
 
 export default router;

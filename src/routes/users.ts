@@ -29,32 +29,36 @@ passport.use(
       /*usernameField: 'name', passwordField: 'passwd'*/
     },
     async (username, password, done) => {
-      if (!username) {
-        done(null, false, { message: 'Incorrect username.' });
-        return;
-      }
-      const { dbo } = await db.connect();
-      const user = await getTable(dbo, 'users', { username, password });
-
-      if (!user || !user.length) {
-        done(null, false, { message: 'Incorrect username or password.' });
-        return;
-      }
-
-      const accesstoken = crypto.randomBytes(32).toString('hex');
-
-      const updatedUser = await dbo.collection('users').updateOne(
-        { _id: new ObjectId(user[0]._id) },
-        {
-          $set: {
-            accesstoken
-          }
+      try {
+        if (!username) {
+          done(null, false, { message: 'Incorrect username.' });
+          return;
         }
-      );
+        const { dbo, pool, client } = await db.connect();
+        const user = await getTable(dbo, 'users', { username, password });
 
-      updatedUser.upsertedId && console.log('find user',updatedUser.upsertedId);
-      done(null, { ...user[0], accesstoken });
-      // });
+        if (!user || !user.length) {
+          done(null, false, { message: 'Incorrect username or password.' });
+          return;
+        }
+        const accesstoken = crypto.randomBytes(32).toString('hex');
+
+        const updatedUser = await dbo.collection('users').updateOne(
+          { _id: new ObjectId(user[0]._id) },
+          {
+            $set: {
+              accesstoken
+            }
+          }
+        );
+
+        updatedUser.upsertedId && console.log('find user', updatedUser.upsertedId);
+        done(null, { ...user[0], accesstoken });
+
+        pool.release(client);
+      } catch (error) {
+        done(null, false, { message: error });
+      }
     }
   )
 );
